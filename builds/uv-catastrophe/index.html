@@ -4,10 +4,137 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>UV Catastrophe</title>
+    <style>
+      :root {
+        --bg: #f6f5f1;
+        --panel: #ffffff;
+        --fg: #1d1d1f;
+        --muted: #6b6b70;
+        --grid: #e7e5df;
+        --border: #dedbd3;
+        --planck: #2563eb;
+        --classical: #d9480f;
+        --dim: #b5b3ad;
+        --font-ui: system-ui, -apple-system, 'Segoe UI', sans-serif;
+        --font-num: ui-monospace, 'SF Mono', Menlo, monospace;
+        color-scheme: light;
+      }
+      @media (prefers-color-scheme: dark) {
+        :root:not([data-theme='light']) {
+          --bg: #141416;
+          --panel: #1c1c1f;
+          --fg: #ececee;
+          --muted: #9a9aa2;
+          --grid: #2b2b30;
+          --border: #34343a;
+          --planck: #6ea1ff;
+          --classical: #ff8a4c;
+          --dim: #55555c;
+          color-scheme: dark;
+        }
+      }
+      :root[data-theme='dark'] {
+        --bg: #141416;
+        --panel: #1c1c1f;
+        --fg: #ececee;
+        --muted: #9a9aa2;
+        --grid: #2b2b30;
+        --border: #34343a;
+        --planck: #6ea1ff;
+        --classical: #ff8a4c;
+        --dim: #55555c;
+        color-scheme: dark;
+      }
+      * { box-sizing: border-box; }
+      body {
+        margin: 0;
+        background: var(--bg);
+        color: var(--fg);
+        font: 14px/1.45 var(--font-ui);
+      }
+      header { padding: 20px 24px 8px; }
+      h1 { margin: 0; font-size: 22px; font-weight: 650; letter-spacing: -0.01em; }
+      header p { margin: 4px 0 0; color: var(--muted); max-width: 70ch; }
+      main {
+        display: grid;
+        grid-template-columns: minmax(0, 1fr) 320px;
+        gap: 16px;
+        padding: 12px 24px 24px;
+      }
+      .plots { display: grid; gap: 16px; min-width: 0; }
+      canvas {
+        display: block;
+        width: 100%;
+        height: 360px;
+        background: var(--panel);
+        border: 1px solid var(--border);
+        border-radius: 8px;
+      }
+      aside {
+        background: var(--panel);
+        border: 1px solid var(--border);
+        border-radius: 8px;
+        padding: 16px;
+        align-self: start;
+      }
+      .control { margin-bottom: 18px; }
+      .control label { display: flex; justify-content: space-between; gap: 8px; font-weight: 600; }
+      .control output { font-family: var(--font-num); font-weight: 500; }
+      .control small { color: var(--muted); font-family: var(--font-num); }
+      input[type='range'] { width: 100%; margin: 8px 0 2px; accent-color: var(--planck); }
+      h2 { font-size: 12px; text-transform: uppercase; letter-spacing: 0.06em; color: var(--muted); margin: 20px 0 6px; }
+      dl { margin: 0; display: grid; grid-template-columns: auto 1fr; gap: 5px 12px; }
+      dt { color: var(--muted); }
+      dd { margin: 0; text-align: right; font-family: var(--font-num); font-size: 13px; }
+      dd .note { display: block; font-family: var(--font-ui); font-size: 11px; color: var(--muted); }
+      .dimmed, .dimmed + dd { color: var(--dim) !important; }
+      .classical { color: var(--classical); }
+      .planck { color: var(--planck); }
+      @media (max-width: 900px) {
+        main { grid-template-columns: minmax(0, 1fr); padding: 12px 16px 24px; }
+        header { padding: 16px 16px 4px; }
+        canvas { height: 300px; }
+      }
+    </style>
   </head>
   <body>
-    <h1>UV catastrophe: physics core</h1>
-    <dl id="readouts"></dl>
+    <header>
+      <h1>The ultraviolet catastrophe, from your own code</h1>
+      <p id="caption"></p>
+    </header>
+    <main>
+      <section class="plots">
+        <canvas id="spectrum" aria-label="Spectral energy density against frequency"></canvas>
+        <canvas id="totals" aria-label="Total energy against cutoff"></canvas>
+      </section>
+      <aside>
+        <div class="control">
+          <label for="cutoff">Cutoff <output id="rc-out"></output></label>
+          <input id="cutoff" type="range" />
+          <small id="lmin-out"></small>
+        </div>
+        <div class="control">
+          <label for="temp">Temperature <output id="t-out"></output></label>
+          <input id="temp" type="range" />
+        </div>
+
+        <h2>Modes up to the cutoff</h2>
+        <dl>
+          <dt>modes counted</dt><dd id="r-modes"></dd>
+          <dt class="classical">U classical</dt><dd id="r-urj"></dd>
+          <dt class="planck">U Planck</dt><dd id="r-up"></dd>
+          <dt>U Planck / aT⁴V</dt><dd id="r-ratio"></dd>
+          <dt>ε = hc / 2LkT</dt><dd id="r-eps"></dd>
+        </dl>
+
+        <h2>Wien peaks (full table)</h2>
+        <dl>
+          <dt id="d-lt">λ_max · T</dt><dd id="r-lt"></dd>
+          <dt id="d-ft">f_max / T</dt><dd id="r-ft"></dd>
+          <dt id="d-prod">λ_max · f_max / c</dt><dd id="r-prod"></dd>
+        </dl>
+      </aside>
+    </main>
     <script type="module" src="/src/main.ts"></script>
   </body>
 </html>

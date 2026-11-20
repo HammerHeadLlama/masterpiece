@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest';
 import { A_RAD, K_B, R_MAX } from '../src/constants';
 import { buildModeTable, countModes } from '../src/modes';
 import {
+  cumulativeTotals,
   epsilon,
   planckOverKT,
   predictedDeficit,
@@ -92,5 +93,17 @@ describe('Gate 5: finite-size law', () => {
       `[gate5] ε=${eps}  measured ${measured.toFixed(6)}  predicted ${predicted.toFixed(6)}`,
     );
     expect(Math.abs(measured / predicted - 1)).toBeLessThan(0.1);
+  });
+});
+
+describe('cumulative totals (energy-panel curves)', () => {
+  it.each([3000, 5772, 9500])('T = %i K: cumulativeTotals equals totals at every sampled cutoff', (T) => {
+    const cum = cumulativeTotals(g, T, R_MAX);
+    expect(cum.U_P.length).toBe(R_MAX + 1);
+    for (const rc of [5, 20, 77, 160]) {
+      const tot = totals(g, T, rc);
+      expect(Math.abs(cum.U_RJ[rc] / tot.U_RJ - 1)).toBeLessThan(1e-12);
+      expect(Math.abs(cum.U_P[rc] / tot.U_P - 1)).toBeLessThan(1e-12);
+    }
   });
 });

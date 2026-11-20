@@ -45,6 +45,36 @@ export function totals(g: Float64Array, T: number, rc: number): Totals {
   return { modes: n, U_RJ: kT * n, U_P: kT * p };
 }
 
+export interface CumulativeTotals {
+  /** U_RJ(R) for integer R = 0 ... rMax, J. */
+  U_RJ: Float64Array;
+  /** U_P(R) for integer R = 0 ... rMax, J. */
+  U_P: Float64Array;
+}
+
+/** U_RJ(R) and U_P(R) at every integer cutoff R (modes with |n|^2 <= R^2), one pass over m. */
+export function cumulativeTotals(g: Float64Array, T: number, rMax: number): CumulativeTotals {
+  const eps = epsilon(T);
+  const kT = K_B * T;
+  const U_RJ = new Float64Array(rMax + 1);
+  const U_P = new Float64Array(rMax + 1);
+  let n = 0;
+  let p = 0;
+  let m = 0;
+  for (let r = 0; r <= rMax; r++) {
+    const mTop = Math.min(r * r, g.length - 1);
+    for (; m <= mTop; m++) {
+      const w = g[m];
+      if (w === 0) continue;
+      n += w;
+      p += w * planckOverKT(eps * Math.sqrt(m));
+    }
+    U_RJ[r] = kT * n;
+    U_P[r] = kT * p;
+  }
+  return { U_RJ, U_P };
+}
+
 /** Continuum Stefan–Boltzmann energy a T^4 V, J. */
 export function referenceEnergy(T: number): number {
   return A_RAD * T ** 4 * V;
