@@ -6,7 +6,8 @@
   "scripts": {
     "dev": "vite",
     "build": "tsc --noEmit && vite build",
-    "test": "vitest run"
+    "test": "vitest run",
+    "readme:gates": "node scripts/gate-table.mjs"
   },
   "devDependencies": {
     "typescript": "5.9.3",

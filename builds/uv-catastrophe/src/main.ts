@@ -61,8 +61,17 @@ function computePerT(T: number): PerT {
 
 const tInput = $<HTMLInputElement>('temp');
 const rcInput = $<HTMLInputElement>('cutoff');
-Object.assign(tInput, { min: String(T_MIN), max: String(T_MAX), step: '1', value: String(T_DEFAULT) });
-Object.assign(rcInput, { min: String(RC_MIN), max: String(R_MAX), step: '1', value: String(RC_DEFAULT) });
+/** Integer URL parameter (?T=…&rc=…), clamped to [min, max]; the default when missing or invalid. */
+function intParam(name: string, min: number, max: number, fallback: number): number {
+  const raw = new URLSearchParams(window.location.search).get(name);
+  const v = raw === null ? NaN : Math.round(Number(raw));
+  return Number.isFinite(v) ? Math.min(max, Math.max(min, v)) : fallback;
+}
+
+const T_START = intParam('T', T_MIN, T_MAX, T_DEFAULT);
+const RC_START = intParam('rc', RC_MIN, R_MAX, RC_DEFAULT);
+Object.assign(tInput, { min: String(T_MIN), max: String(T_MAX), step: '1', value: String(T_START) });
+Object.assign(rcInput, { min: String(RC_MIN), max: String(R_MAX), step: '1', value: String(RC_START) });
 
 $('caption').textContent =
   `A perfectly conducting cube, L = ${(L * 1e6).toFixed(0)} µm. Every standing-wave mode up to the cutoff is counted ` +

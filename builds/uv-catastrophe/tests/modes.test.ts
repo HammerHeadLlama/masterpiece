@@ -30,10 +30,12 @@ describe('Gate 1: mode table', () => {
   });
 
   it('g[1..6] matches the hand count 0, 3, 2, 0, 6, 6', () => {
+    console.log(`[gate1] g[1..6] = ${Array.from(g.slice(1, 7)).join(', ')}`);
     expect(Array.from(g.slice(1, 7))).toEqual([0, 3, 2, 0, 6, 6]);
   });
 
   it('sum of g for m <= 160^2 is exactly 4,288,591', () => {
+    console.log(`[gate1] N(160) = ${countModes(g, 160)}`);
     expect(countModes(g, 160)).toBe(4288591);
   });
 });

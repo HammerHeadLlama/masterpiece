@@ -1,0 +1,49 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>UV Catastrophe</title>
+    <style>:root{--bg:#f6f5f1;--panel:#fff;--fg:#1d1d1f;--muted:#6b6b70;--grid:#e7e5df;--border:#dedbd3;--planck:#2563eb;--classical:#d9480f;--dim:#b5b3ad;--font-ui:system-ui, -apple-system, "Segoe UI", sans-serif;--font-num:ui-monospace, "SF Mono", Menlo, monospace;--lightningcss-light:initial;--lightningcss-dark: ;color-scheme:light}@media (prefers-color-scheme:dark){:root:not([data-theme=light]){--bg:#141416;--panel:#1c1c1f;--fg:#ececee;--muted:#9a9aa2;--grid:#2b2b30;--border:#34343a;--planck:#6ea1ff;--classical:#ff8a4c;--dim:#55555c;--lightningcss-light: ;--lightningcss-dark:initial;color-scheme:dark}}:root[data-theme=dark]{--bg:#141416;--panel:#1c1c1f;--fg:#ececee;--muted:#9a9aa2;--grid:#2b2b30;--border:#34343a;--planck:#6ea1ff;--classical:#ff8a4c;--dim:#55555c;--lightningcss-light: ;--lightningcss-dark:initial;color-scheme:dark}*{box-sizing:border-box}body{background:var(--bg);color:var(--fg);font:14px/1.45 var(--font-ui);margin:0}header{padding:20px 24px 8px}h1{letter-spacing:-.01em;margin:0;font-size:22px;font-weight:650}header p{color:var(--muted);max-width:70ch;margin:4px 0 0}main{grid-template-columns:minmax(0,1fr) 320px;gap:16px;padding:12px 24px 24px;display:grid}.plots{gap:16px;min-width:0;display:grid}canvas{background:var(--panel);border:1px solid var(--border);border-radius:8px;width:100%;height:360px;display:block}aside{background:var(--panel);border:1px solid var(--border);border-radius:8px;align-self:start;padding:16px}.control{margin-bottom:18px}.control label{justify-content:space-between;gap:8px;font-weight:600;display:flex}.control output{font-family:var(--font-num);font-weight:500}.control small{color:var(--muted);font-family:var(--font-num)}input[type=range]{width:100%;accent-color:var(--planck);margin:8px 0 2px}h2{text-transform:uppercase;letter-spacing:.06em;color:var(--muted);margin:20px 0 6px;font-size:12px}dl{grid-template-columns:auto 1fr;gap:5px 12px;margin:0;display:grid}dt{color:var(--muted)}dd{text-align:right;font-family:var(--font-num);margin:0;font-size:13px}dd .note{font-family:var(--font-ui);color:var(--muted);font-size:11px;display:block}.dimmed,.dimmed+dd{color:var(--dim)!important}.classical{color:var(--classical)}.planck{color:var(--planck)}@media (width<=900px){main{grid-template-columns:minmax(0,1fr);padding:12px 16px 24px}header{padding:16px 16px 4px}canvas{height:300px}}</style>
+    <script type="module" crossorigin src="./assets/index-Bz9hhq9y.js"></script>
+  </head>
+  <body>
+    <header>
+      <h1>The ultraviolet catastrophe, from your own code</h1>
+      <p id="caption"></p>
+    </header>
+    <main>
+      <section class="plots">
+        <canvas id="spectrum" aria-label="Spectral energy density against frequency"></canvas>
+        <canvas id="totals" aria-label="Total energy against cutoff"></canvas>
+      </section>
+      <aside>
+        <div class="control">
+          <label for="cutoff">Cutoff <output id="rc-out"></output></label>
+          <input id="cutoff" type="range" />
+          <small id="lmin-out"></small>
+        </div>
+        <div class="control">
+          <label for="temp">Temperature <output id="t-out"></output></label>
+          <input id="temp" type="range" />
+        </div>
+
+        <h2>Modes up to the cutoff</h2>
+        <dl>
+          <dt>modes counted</dt><dd id="r-modes"></dd>
+          <dt class="classical">U classical</dt><dd id="r-urj"></dd>
+          <dt class="planck">U Planck</dt><dd id="r-up"></dd>
+          <dt>U Planck / aT⁴V</dt><dd id="r-ratio"></dd>
+          <dt>ε = hc / 2LkT</dt><dd id="r-eps"></dd>
+        </dl>
+
+        <h2>Wien peaks (full table)</h2>
+        <dl>
+          <dt id="d-lt">λ_max · T</dt><dd id="r-lt"></dd>
+          <dt id="d-ft">f_max / T</dt><dd id="r-ft"></dd>
+          <dt id="d-prod">λ_max · f_max / c</dt><dd id="r-prod"></dd>
+        </dl>
+      </aside>
+    </main>
+  </body>
+</html>

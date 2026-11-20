@@ -40,16 +40,19 @@ describe('constants', () => {
 describe('Gate 3: Planck limits', () => {
   it('x = 1e-8: E/kT equals 1 − x/2 to 1e-12', () => {
     const x = 1e-8;
+    console.log(`[gate3] x=1e-8  |E/kT − (1 − x/2)| = ${Math.abs(planckOverKT(x) - (1 - x / 2)).toExponential(2)}`);
     expect(Math.abs(planckOverKT(x) - (1 - x / 2))).toBeLessThan(1e-12);
   });
 
   it('x = 50: E/kT equals 50·e^−50 to relative 1e-12', () => {
     const ref = 50 * Math.exp(-50);
+    console.log(`[gate3] x=50  relative error ${Math.abs(planckOverKT(50) / ref - 1).toExponential(2)}`);
     expect(Math.abs(planckOverKT(50) / ref - 1)).toBeLessThan(1e-12);
   });
 
   it('x = 800: finite and zero-safe', () => {
     const e = planckOverKT(800);
+    console.log(`[gate3] x=800  E/kT = ${e}`);
     expect(Number.isFinite(e)).toBe(true);
     expect(e).toBeGreaterThanOrEqual(0);
     expect(e).toBeLessThan(1e-300);
