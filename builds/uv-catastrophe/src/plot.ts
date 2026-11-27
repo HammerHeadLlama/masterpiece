@@ -416,9 +416,10 @@ export function drawSpectrum(canvas: HTMLCanvasElement, v: SpectrumView, th: The
 
   bandLabels(ctx, f, v.visibleTHz[0], v.visibleTHz[1], th);
 
+  // own row: below the clip-arrow label (top + 12), above the marker labels (top + 50 and down)
   const xcut = X(f, v.cutoffTHz);
   if (xcut > f.left + 60 && xcut < f.right - 2) {
-    text(ctx, th, 'cutoff', xcut - 4, f.top + 14, { color: th.muted, align: 'right' });
+    text(ctx, th, 'cutoff', xcut - 4, f.top + 31, { color: th.muted, align: 'right' });
   }
 
   vMarker(ctx, f, v.fMaxTHz, `f_max ${v.fMaxTHz.toFixed(0)} THz`, th, v.fMaxDim, 1);

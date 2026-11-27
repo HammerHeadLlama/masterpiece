@@ -74,6 +74,25 @@ Each item notes where the change lands. **logic** means a `src/main.ts` change; 
 | K6 | System font stacks, no web fonts, 18.8 KB | Lean; the redesign must not get noticeably heavier |
 | K7 | Native range inputs (arrow, PageUp and End keys work) | Native affordances; no custom slider |
 
+## Re-audit after step 3 (step 4, round 1)
+
+This was measured on the live page: light and dark, 375 / 768 / 1280 px, and 50 slider states per width. Canvas text was checked by instrumenting `fillText`: 5,998 labels, with no collisions, no clipping and no horizontal overflow, after one fix (the Fig. 2 "cutoff" label got its own row).
+
+| # | Dimension | Before | After | Evidence |
+|---|---|---|---|---|
+| 1 | Accessibility | 2 | 3 | Every DOM text element passes AA in both themes. Greyed rows 4.96:1 (were 2.10). Focus ring 2px `--ring` at 8.58:1. `aria-valuetext` on both sliders. `aria-live` payoff sentence. `role="img"` canvases. Classical is dashed. Not yet tested with a real screen reader |
+| 2 | Performance | 4 | 4 | No web fonts; weight is re-measured in step 7 |
+| 3 | Theming | 3 | 4 | Every colour, size, space, radius and opacity is a token. The only literal colours left are the physical visible-spectrum stops in `plot.ts` |
+| 4 | Responsive | 1 | 3 | Controls come first and stay pinned at ≤ 999px. Figures fit 1280×720. No collisions at any width. The touch gesture is untested on a real device |
+| 5 | Implementation integrity | 3 | 4 | One token system for DOM and canvas; no `!important`; dead canvas `legend()` removed |
+| | **Total** | **13/20** | **18/20** | Excellent |
+
+**Fix-list status:**
+- **Fixed:** F1, F2, F3, F4, F5, F9, F10, F11, F12, F13, F15, F16, F17.
+- **Partly fixed:** F6 (keys unified; label copy in step 6), F7 (real `<sub>`; "(full table)" wording in step 6), F8 (payoff sentence and type scale; readout rows are still one tier).
+- **Open:** F14 (first-step cue, step 6 copy).
+- **High-severity left:** none, so the loop stops after round 1.
+
 ## Open (features, not a redesign)
 
 These are outside "restyle, don't add logic" and are noted for later: a reset button, writing the slider state back to the URL, typed numeric entry, "jump to catastrophe" presets, hover values on the canvases, and a coarser T step.
