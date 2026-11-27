@@ -75,8 +75,8 @@ Object.assign(tInput, { min: String(T_MIN), max: String(T_MAX), step: '1', value
 Object.assign(rcInput, { min: String(RC_MIN), max: String(R_MAX), step: '1', value: String(RC_START) });
 
 $('caption').textContent =
-  `A perfectly conducting cube, L = ${(L * 1e6).toFixed(0)} µm. Every standing-wave mode up to the cutoff is counted ` +
-  `and given its thermal energy twice: kT each (classical equipartition) and kT·x/(eˣ − 1) (Planck).`;
+  `Inside a perfectly conducting cube with L = ${(L * 1e6).toFixed(0)} µm, the page counts every standing-wave mode ` +
+  `up to the cutoff and gives each one its thermal energy two ways: kT (classical equipartition) and kT·x/(eˣ − 1) (Planck).`;
 
 const spectrumCanvas = $<HTMLCanvasElement>('spectrum');
 const totalsCanvas = $<HTMLCanvasElement>('totals');
