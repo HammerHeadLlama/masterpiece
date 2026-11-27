@@ -43,6 +43,9 @@
         --radius: 2px;
         --radius-round: 999px;
         --sidebar: 340px;
+        --ease-out: cubic-bezier(0.23, 1, 0.32, 1);
+        --dur-press: 120ms;
+        --dur-fade: 160ms;
         /* figure canvas height: both figures fit a 720px laptop screen */
         --fig-h: clamp(232px, calc((100dvh - 330px) / 2), 400px);
 
@@ -226,6 +229,10 @@
         background: var(--panel);
         border: 2px solid var(--fg);
         box-shadow: 0 1px 3px rgb(0 0 0 / 0.18);
+        cursor: grab;
+        transition:
+          transform var(--dur-press) var(--ease-out),
+          box-shadow var(--dur-press) var(--ease-out);
       }
       input[type='range']::-moz-range-thumb {
         width: 20px;
@@ -234,6 +241,31 @@
         background: var(--panel);
         border: 2px solid var(--fg);
         box-shadow: 0 1px 3px rgb(0 0 0 / 0.18);
+        cursor: grab;
+        transition:
+          transform var(--dur-press) var(--ease-out),
+          box-shadow var(--dur-press) var(--ease-out);
+      }
+      /* hover only where a real pointer can hover */
+      @media (hover: hover) and (pointer: fine) {
+        input[type='range']:hover::-webkit-slider-thumb {
+          box-shadow: 0 1px 3px rgb(0 0 0 / 0.18), 0 0 0 5px color-mix(in srgb, var(--fg) 10%, transparent);
+        }
+        input[type='range']:hover::-moz-range-thumb {
+          box-shadow: 0 1px 3px rgb(0 0 0 / 0.18), 0 0 0 5px color-mix(in srgb, var(--fg) 10%, transparent);
+        }
+      }
+      /* press: the thumb lifts, confirming the grab */
+      input[type='range']:active { cursor: grabbing; }
+      input[type='range']:active::-webkit-slider-thumb {
+        cursor: grabbing;
+        transform: scale(1.12);
+        box-shadow: 0 2px 6px rgb(0 0 0 / 0.22), 0 0 0 6px color-mix(in srgb, var(--fg) 14%, transparent);
+      }
+      input[type='range']:active::-moz-range-thumb {
+        cursor: grabbing;
+        transform: scale(1.12);
+        box-shadow: 0 2px 6px rgb(0 0 0 / 0.22), 0 0 0 6px color-mix(in srgb, var(--fg) 14%, transparent);
       }
 
       /* ---------------------------------------------------------------- readouts */
@@ -252,9 +284,34 @@
       dt, dd { padding: var(--space-2) 0; border-top: 1px solid var(--rule); }
       dt { color: var(--muted); }
       dd { margin: 0; text-align: right; font-variant-numeric: tabular-nums; }
-      dd .note { display: block; font-size: var(--text-xs); }
+      dd .note {
+        display: block;
+        font-size: var(--text-xs);
+        transition: opacity var(--dur-fade) ease;
+        @starting-style { opacity: 0; }
+      }
+      dt, dd { transition: color var(--dur-fade) ease; }
       .readouts dt.dimmed,
       .readouts dt.dimmed + dd { color: var(--dim); }
+
+      /* empty state: before the script fills a value */
+      dd:empty::before,
+      .verdict span:empty::before { content: '–'; color: var(--dim); }
+      .noscript {
+        margin: 0 0 var(--space-4);
+        padding: var(--space-3) var(--space-4);
+        border: 1px solid var(--border);
+        border-radius: var(--radius);
+        background: var(--panel);
+      }
+
+      @media (prefers-reduced-motion: reduce) {
+        /* keep the colour and opacity fades; drop the thumb's movement */
+        input[type='range']::-webkit-slider-thumb { transition: box-shadow var(--dur-press) ease; }
+        input[type='range']::-moz-range-thumb { transition: box-shadow var(--dur-press) ease; }
+        input[type='range']:active::-webkit-slider-thumb { transform: none; }
+        input[type='range']:active::-moz-range-thumb { transform: none; }
+      }
       .readouts dt.classical { color: var(--classical); }
       .readouts dt.planck { color: var(--planck); }
 
@@ -292,6 +349,7 @@
         <h1>The ultraviolet catastrophe, from your own code</h1>
         <p id="caption"></p>
       </header>
+      <noscript><p class="noscript">This page runs the simulation in JavaScript. Turn JavaScript on to see the figures and readouts.</p></noscript>
       <main class="layout">
         <section class="controls" aria-label="Controls">
           <div class="control">
