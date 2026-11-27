@@ -267,34 +267,6 @@ function clipArrow(ctx: CanvasRenderingContext2D, f: Frame, x: number, color: st
   text(ctx, th, label, lx, y + 12, { color, size, weight: 600, baseline: 'middle' });
 }
 
-function legend(ctx: CanvasRenderingContext2D, f: Frame, th: Theme, items: { label: string; color: string; kind: 'fill' | 'line' | 'thin' | 'dash' | 'dot' }[]) {
-  ctx.font = `11px ${th.font}`;
-  ctx.textBaseline = 'middle';
-  ctx.textAlign = 'left';
-  let x = f.left;
-  const y = 14;
-  for (const it of items) {
-    ctx.strokeStyle = it.color;
-    ctx.fillStyle = it.color;
-    ctx.lineWidth = it.kind === 'line' ? 2 : 1.25;
-    if (it.kind === 'fill') {
-      ctx.globalAlpha = 0.6;
-      ctx.fillRect(x, y - 5, 14, 10);
-      ctx.globalAlpha = 1;
-    } else {
-      ctx.setLineDash(it.kind === 'dash' ? [5, 3] : it.kind === 'dot' ? [1.5, 2.5] : []);
-      ctx.beginPath();
-      ctx.moveTo(x, y);
-      ctx.lineTo(x + 16, y);
-      ctx.stroke();
-      ctx.setLineDash([]);
-    }
-    ctx.fillStyle = th.fg;
-    ctx.fillText(it.label, x + 20, y);
-    x += 26 + ctx.measureText(it.label).width + 10;
-  }
-}
-
 // ---------------------------------------------------------------- spectrum panel
 
 export interface SpectrumView {
@@ -318,60 +290,88 @@ export interface SpectrumView {
   fLambdaDim: boolean;
 }
 
-function visibleBand(ctx: CanvasRenderingContext2D, f: Frame, lo: number, hi: number) {
+// The visible spectrum as light, red (low f) to violet (high f): physical colours, not theme colours.
+const SPECTRAL_STOPS = ['#ff2a2a', '#ff8c00', '#ffe600', '#2ee05a', '#19c8ff', '#3a5bff', '#9b3cff'];
+
+function visibleBand(ctx: CanvasRenderingContext2D, f: Frame, lo: number, hi: number, th: Theme) {
   const x0 = X(f, lo);
   const x1 = X(f, hi);
   const g = ctx.createLinearGradient(x0, 0, x1, 0);
-  // low frequency (red) to high frequency (violet)
-  const stops = ['#ff2a2a', '#ff8c00', '#ffe600', '#2ee05a', '#19c8ff', '#3a5bff', '#9b3cff'];
-  stops.forEach((c, i) => g.addColorStop(i / (stops.length - 1), c));
+  SPECTRAL_STOPS.forEach((c, i) => g.addColorStop(i / (SPECTRAL_STOPS.length - 1), c));
   ctx.save();
-  ctx.globalAlpha = 0.16;
+  ctx.globalAlpha = th.bandAlpha;
   ctx.fillStyle = g;
   ctx.fillRect(x0, f.top, x1 - x0, f.bottom - f.top);
   ctx.restore();
 }
 
+/** "visible" under the band and "ultraviolet" with a drawn arrow beyond it, on the baseline. */
+function bandLabels(ctx: CanvasRenderingContext2D, f: Frame, lo: number, hi: number, th: Theme) {
+  const y = f.bottom - 7;
+  const x0 = X(f, lo);
+  const x1 = X(f, hi);
+  const vis = 'visible';
+  if (textWidth(ctx, th, vis, th.textXs) + 8 < x1 - x0) {
+    text(ctx, th, vis, (x0 + x1) / 2, y, { color: th.muted, align: 'center' });
+  }
+  const uv = 'ultraviolet';
+  const uw = textWidth(ctx, th, uv, th.textXs);
+  const ux = x1 + 6;
+  if (ux + uw + 22 < f.right) {
+    text(ctx, th, uv, ux, y, { color: th.muted });
+    const ax = ux + uw + 6;
+    const ay = y - 4;
+    ctx.save();
+    ctx.strokeStyle = th.muted;
+    ctx.lineWidth = 1.25;
+    ctx.beginPath();
+    ctx.moveTo(ax, ay);
+    ctx.lineTo(ax + 12, ay);
+    ctx.moveTo(ax + 8, ay - 3);
+    ctx.lineTo(ax + 12, ay);
+    ctx.lineTo(ax + 8, ay + 3);
+    ctx.stroke();
+    ctx.restore();
+  }
+}
+
 function vMarker(ctx: CanvasRenderingContext2D, f: Frame, x: number, label: string, th: Theme, dim: boolean, row: number) {
   const px = Math.round(X(f, x)) + 0.5;
+  const color = dim ? th.dim : th.fg;
+  const ly = f.top + 34 + row * 16;
   ctx.save();
-  ctx.globalAlpha = dim ? 0.3 : 1;
-  ctx.strokeStyle = th.fg;
+  ctx.strokeStyle = color;
   ctx.setLineDash([4, 3]);
   ctx.lineWidth = 1;
   ctx.beginPath();
-  const ly = f.top + 34 + row * 15;
-  ctx.moveTo(px, ly);
+  ctx.moveTo(px, ly + 6);
   ctx.lineTo(px, f.bottom);
   ctx.stroke();
-  ctx.setLineDash([]);
-  ctx.fillStyle = th.fg;
-  ctx.font = `11px ${th.font}`;
-  ctx.textAlign = 'left';
-  ctx.textBaseline = 'middle';
-  ctx.fillText(label, px + 4, ly);
   ctx.restore();
+  const wd = textWidth(ctx, th, label, th.textXs);
+  const right = px + 4 + wd < f.right - 4;
+  text(ctx, th, label, right ? px + 4 : px - 4, ly, { color, align: right ? 'left' : 'right', baseline: 'middle' });
 }
 
 export function drawSpectrum(canvas: HTMLCanvasElement, v: SpectrumView, th: Theme) {
   const { ctx, w, h } = fitCanvas(canvas);
   clear(ctx, w, h, th);
-  const f = makeFrame(w, h, 0, v.xMaxTHz, 0, v.yMax);
+  const f = makeFrame(w, h, 0, v.xMaxTHz, 0, v.yMax, 22);
   const exp = Math.floor(Math.log10(v.yMax));
-  visibleBand(ctx, f, v.visibleTHz[0], v.visibleTHz[1]);
+  visibleBand(ctx, f, v.visibleTHz[0], v.visibleTHz[1], th);
   drawAxes(ctx, f, th, 'frequency f (THz)', `u_f  (10${superscript(exp)} J m⁻³ Hz⁻¹)`, 10 ** exp);
 
   withClip(ctx, f, () => {
     // region above the cutoff
     const xc = X(f, v.cutoffTHz);
     ctx.fillStyle = th.grid;
-    ctx.globalAlpha = 0.5;
+    ctx.globalAlpha = th.shadeAlpha;
     ctx.fillRect(xc, f.top, f.right - xc, f.bottom - f.top);
     ctx.globalAlpha = 1;
 
     // Planck bars
     ctx.fillStyle = th.planck;
-    ctx.globalAlpha = 0.55;
+    ctx.globalAlpha = th.barAlpha;
     const half = v.binTHz / 2;
     for (let i = 0; i < v.fTHz.length; i++) {
       if (v.ufP[i] <= 0) continue;
@@ -414,11 +414,12 @@ export function drawSpectrum(canvas: HTMLCanvasElement, v: SpectrumView, th: The
     ctx.stroke();
   });
 
-  ctx.fillStyle = th.muted;
-  ctx.font = `11px ${th.font}`;
-  ctx.textAlign = 'right';
-  ctx.textBaseline = 'bottom';
-  if (X(f, v.cutoffTHz) > f.left + 60) ctx.fillText('cutoff', X(f, v.cutoffTHz) - 4, f.bottom - 4);
+  bandLabels(ctx, f, v.visibleTHz[0], v.visibleTHz[1], th);
+
+  const xcut = X(f, v.cutoffTHz);
+  if (xcut > f.left + 60 && xcut < f.right - 2) {
+    text(ctx, th, 'cutoff', xcut - 4, f.top + 14, { color: th.muted, align: 'right' });
+  }
 
   vMarker(ctx, f, v.fMaxTHz, `f_max ${v.fMaxTHz.toFixed(0)} THz`, th, v.fMaxDim, 1);
   vMarker(ctx, f, v.fLambdaTHz, `c/λ_max ${v.fLambdaTHz.toFixed(0)} THz`, th, v.fLambdaDim, 2);
@@ -431,13 +432,6 @@ export function drawSpectrum(canvas: HTMLCanvasElement, v: SpectrumView, th: The
     }
   }
   if (firstClip >= 0) clipArrow(ctx, f, X(f, v.fTHz[firstClip]), th.classical, 'classical bars leave the panel', th);
-
-  legend(ctx, f, th, [
-    { label: 'Planck modes', color: th.planck, kind: 'fill' },
-    { label: 'classical modes', color: th.classical, kind: 'line' },
-    { label: 'Planck continuum', color: th.planck, kind: 'thin' },
-    { label: 'Rayleigh–Jeans', color: th.classical, kind: 'dot' },
-  ]);
 }
 
 // ---------------------------------------------------------------- total-energy panel
