@@ -25,6 +25,10 @@ Everything `src/main.ts` and `src/plot.ts` rely on in `index.html`. Every entry 
 | `d-lt` | `<dt>` | grey-out target for λ_max·T |
 | `d-ft` | `<dt>` | grey-out target for f_max/T |
 | `d-prod` | `<dt>` | grey-out target for the product |
+| `v-rj` | `<span>` in the Fig. 1 caption | classical U / aT⁴V (added in the redesign, logic commit) |
+| `v-p` | `<span>` in the Fig. 1 caption | Planck U / aT⁴V (added in the redesign, logic commit) |
+
+The redesign's logic commit also makes `main.ts` set `aria-valuetext` on `#cutoff` and `#temp`.
 
 ## Structure
 

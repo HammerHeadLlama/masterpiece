@@ -44,7 +44,7 @@
         --radius-round: 999px;
         --sidebar: 340px;
         /* figure canvas height: both figures fit a 720px laptop screen */
-        --fig-h: clamp(240px, calc((100dvh - 290px) / 2), 400px);
+        --fig-h: clamp(232px, calc((100dvh - 330px) / 2), 400px);
 
         color-scheme: light;
       }
@@ -137,6 +137,16 @@
       }
       .fig-title { font: 600 var(--text-md) / 1.3 var(--font-display); }
       .fig-no { color: var(--muted); font-weight: 400; margin-right: var(--space-2); }
+      .verdict {
+        flex-basis: 100%;
+        margin: 0;
+        font: var(--text-md) / 1.4 var(--font-display);
+        font-variant-numeric: tabular-nums;
+        text-wrap: pretty;
+      }
+      .verdict strong { font-weight: 600; white-space: nowrap; }
+      .verdict .classical { color: var(--classical); }
+      .verdict .planck { color: var(--planck); }
       .key {
         display: flex;
         flex-wrap: wrap;
@@ -310,6 +320,10 @@
                 <li><span class="sw sw-line sw-planck" aria-hidden="true"></span>Planck</li>
                 <li><span class="sw sw-line sw-ref" aria-hidden="true"></span>aT⁴V (Stefan–Boltzmann)</li>
               </ul>
+              <p class="verdict" aria-live="polite">
+                Up to this cutoff, classical physics puts <strong class="classical"><span id="v-rj"></span> × aT⁴V</strong>
+                of energy in the box. Planck puts <strong class="planck"><span id="v-p"></span> × aT⁴V</strong>.
+              </p>
             </figcaption>
             <canvas id="totals" role="img" aria-label="Total energy, classical and Planck, against the cutoff index, in units of aT⁴V"></canvas>
           </figure>

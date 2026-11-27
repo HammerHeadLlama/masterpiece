@@ -10,8 +10,9 @@ const T_MIN = 3000;
 const T_MAX = 9500;
 const T_DEFAULT = 5772;
 const RC_MIN = 5;
-const RC_DEFAULT = 20;
+const RC_DEFAULT = 10; // low start, so the first drag has room before the classical curve leaves the panel
 const VISIBLE_THZ: [number, number] = [430, 750];
+const UV_EDGE_NM = 400; // shortest visible wavelength; below it is ultraviolet
 const TOTALS_Y_MAX = 2.5; // in units of aT⁴V
 const SPECTRUM_HEADROOM = 1.3;
 const CURVE_SAMPLES = 600;
@@ -113,7 +114,18 @@ function render() {
   // control labels
   setText('t-out', `${T} K`);
   setText('rc-out', `Rc = ${rc}`);
-  setText('lmin-out', `λ_min = 2L/Rc = ${lambdaMinNm.toFixed(0)} nm, f_cut = ${((rc * F0) / 1e12).toFixed(0)} THz`);
+  const uv = lambdaMinNm < UV_EDGE_NM ? ' (ultraviolet)' : '';
+  setText(
+    'lmin-out',
+    `λ_min = 2L/Rc = ${lambdaMinNm.toFixed(0)} nm${uv}, f_cut = ${((rc * F0) / 1e12).toFixed(0)} THz`,
+  );
+  rcInput.setAttribute('aria-valuetext', `Rc ${rc}, shortest wavelength ${lambdaMinNm.toFixed(0)} nanometres${uv}`);
+  tInput.setAttribute('aria-valuetext', `${T} kelvin`);
+
+  // the payoff, in one sentence (Fig. 1 caption)
+  const rjOverRef = tot.U_RJ / p.ref;
+  setText('v-rj', rjOverRef >= 100 ? rjOverRef.toFixed(0) : rjOverRef >= 10 ? rjOverRef.toFixed(1) : rjOverRef.toFixed(2));
+  setText('v-p', (tot.U_P / p.ref).toFixed(3));
 
   // readouts
   setText('r-modes', tot.modes.toLocaleString('en-US'));
@@ -130,9 +142,12 @@ function render() {
   setText('r-lt', `${(w.lambdaMaxT * 1e3).toFixed(4)} mm K`);
   setText('r-ft', `${sci(w.fMaxOverT, 4)} Hz/K`);
   setText('r-prod', w.productOverC.toFixed(4));
-  setDim('d-lt', lDim, `peak (${(w.lambdaMax * 1e9).toFixed(0)} nm) beyond cutoff`);
-  setDim('d-ft', fDim, `peak (${(w.fMax / 1e12).toFixed(0)} THz) beyond cutoff`);
-  setDim('d-prod', lDim || fDim, 'a peak is beyond cutoff');
+  // greyed rows say what to do: the cutoff index that reaches the peak
+  const lNeed = Math.ceil(lPeakIndex);
+  const fNeed = Math.ceil(fPeakIndex);
+  setDim('d-lt', lDim, `peak at ${(w.lambdaMax * 1e9).toFixed(0)} nm: raise the cutoff to Rc ${lNeed}`);
+  setDim('d-ft', fDim, `peak at ${(w.fMax / 1e12).toFixed(0)} THz: raise the cutoff to Rc ${fNeed}`);
+  setDim('d-prod', lDim || fDim, `needs both peaks: raise the cutoff to Rc ${Math.max(lNeed, fNeed)}`);
 
   const th = readTheme();
   const fTHz = new Float64Array(bins.nBins).map((_, i) => spec.f[i] / 1e12);
@@ -157,7 +172,8 @@ function render() {
 
   const rjRatio = p.cum.U_RJ.map((u) => u / p.ref);
   const pRatio = p.cum.U_P.map((u) => u / p.ref);
-  drawTotals(totalsCanvas, { rMax: R_MAX, rc, rjRatio, pRatio, yMax: TOTALS_Y_MAX, lambdaMinNm }, th);
+  const uvRc = (2 * L) / (UV_EDGE_NM * 1e-9);
+  drawTotals(totalsCanvas, { rMax: R_MAX, rc, rjRatio, pRatio, yMax: TOTALS_Y_MAX, lambdaMinNm, uvRc }, th);
 }
 
 let pending = false;
