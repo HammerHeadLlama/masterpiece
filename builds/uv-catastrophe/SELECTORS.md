@@ -56,7 +56,7 @@ The redesign's logic commit also makes `main.ts` set `aria-valuetext` on `#cutof
 
 ## Core flow, tested by hand
 
-1. **Load** the page with no query string. Rc = 20 and T = 5772 K. Every readout is filled. All three Wien rows are greyed with a "beyond cutoff" note.
+1. **Load** the page with no query string. Rc = 10 (it was 20 before the redesign's logic commit) and T = 5772 K. Every readout is filled. All three Wien rows are greyed, each with a "raise the cutoff to Rc N" note. The Fig. 1 caption sentence reads "0.10 × aT⁴V … 0.059 × aT⁴V".
 2. **Drag the cutoff to 160.**
    - The classical curve leaves the top of the energy panel with an arrow and an "× aT⁴V and climbing" label.
    - The Planck curve flattens onto the dashed aT⁴V line.

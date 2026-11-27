@@ -76,7 +76,7 @@ Object.assign(rcInput, { min: String(RC_MIN), max: String(R_MAX), step: '1', val
 
 $('caption').textContent =
   `Inside a perfectly conducting cube with L = ${(L * 1e6).toFixed(0)} µm, the page counts every standing-wave mode ` +
-  `up to the cutoff and gives each one its thermal energy two ways: kT (classical equipartition) and kT·x/(eˣ − 1) (Planck).`;
+  `up to the cutoff and gives each one its thermal energy two ways: kT (classical equipartition) and kT·x/(eˣ − 1) (Planck).`; // no-break spaces keep the formula on one line
 
 const spectrumCanvas = $<HTMLCanvasElement>('spectrum');
 const totalsCanvas = $<HTMLCanvasElement>('totals');
