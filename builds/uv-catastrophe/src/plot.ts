@@ -4,24 +4,77 @@ export interface Theme {
   bg: string;
   fg: string;
   muted: string;
+  dim: string;
   grid: string;
   planck: string;
   classical: string;
+  /** Text halo colour (the panel), so labels stay legible over lines and bars. */
+  halo: string;
   font: string;
+  /** Type sizes in CSS px. */
+  textXs: number;
+  textSm: number;
+  /** Opacities. */
+  barAlpha: number;
+  bandAlpha: number;
+  shadeAlpha: number;
 }
 
+/** All canvas colours, fonts, sizes and opacities come from the CSS tokens (DESIGN.md). */
 export function readTheme(): Theme {
   const s = getComputedStyle(document.documentElement);
   const v = (name: string) => s.getPropertyValue(name).trim();
+  const n = (name: string, fallback: number) => {
+    const x = parseFloat(v(name));
+    return Number.isFinite(x) ? x : fallback;
+  };
   return {
     bg: v('--panel'),
     fg: v('--fg'),
     muted: v('--muted'),
+    dim: v('--dim') || v('--muted'),
     grid: v('--grid'),
     planck: v('--planck'),
     classical: v('--classical'),
+    halo: v('--halo') || v('--panel'),
     font: v('--font-ui') || 'system-ui, sans-serif',
+    textXs: n('--text-xs', 12),
+    textSm: n('--text-sm', 14),
+    barAlpha: n('--bar-alpha', 0.7),
+    bandAlpha: n('--band-alpha', 0.18),
+    shadeAlpha: n('--shade-alpha', 0.5),
   };
+}
+
+interface TextOpts {
+  color: string;
+  size?: number;
+  weight?: number;
+  align?: CanvasTextAlign;
+  baseline?: CanvasTextBaseline;
+}
+
+/** Canvas text with a panel-coloured halo behind it. */
+function text(ctx: CanvasRenderingContext2D, th: Theme, s: string, x: number, y: number, o: TextOpts) {
+  ctx.save();
+  ctx.font = `${o.weight ?? 400} ${o.size ?? th.textXs}px ${th.font}`;
+  ctx.textAlign = o.align ?? 'left';
+  ctx.textBaseline = o.baseline ?? 'alphabetic';
+  ctx.lineJoin = 'round';
+  ctx.lineWidth = 4;
+  ctx.strokeStyle = th.halo;
+  ctx.strokeText(s, x, y);
+  ctx.fillStyle = o.color;
+  ctx.fillText(s, x, y);
+  ctx.restore();
+}
+
+function textWidth(ctx: CanvasRenderingContext2D, th: Theme, s: string, size: number, weight = 400): number {
+  ctx.save();
+  ctx.font = `${weight} ${size}px ${th.font}`;
+  const wd = ctx.measureText(s).width;
+  ctx.restore();
+  return wd;
 }
 
 /** Size the backing store to the CSS box at the device pixel ratio; returns a context in CSS pixels. */
@@ -92,11 +145,19 @@ const Y = (f: Frame, v: number) => f.bottom - ((v - f.yMin) / (f.yMax - f.yMin))
 
 const MARGIN = { left: 58, right: 18, top: 30, bottom: 42 };
 
-function makeFrame(w: number, h: number, xMin: number, xMax: number, yMin: number, yMax: number): Frame {
+function makeFrame(
+  w: number,
+  h: number,
+  xMin: number,
+  xMax: number,
+  yMin: number,
+  yMax: number,
+  top = MARGIN.top,
+): Frame {
   return {
     left: MARGIN.left,
     right: w - MARGIN.right,
-    top: MARGIN.top,
+    top,
     bottom: h - MARGIN.bottom,
     xMin,
     xMax,
@@ -120,10 +181,13 @@ function drawAxes(
   yTitle: string,
   yScale = 1,
 ) {
-  ctx.font = `11px ${th.font}`;
+  ctx.font = `${th.textXs}px ${th.font}`;
   ctx.lineWidth = 1;
-  const xt = niceTicks(f.xMin, f.xMax, 8);
-  const yt = niceTicks(f.yMin / yScale, f.yMax / yScale, 5);
+  // tick density follows the frame so labels never collide on narrow canvases
+  const xCount = Math.max(3, Math.min(8, Math.floor((f.right - f.left) / 72)));
+  const yCount = Math.max(3, Math.min(5, Math.floor((f.bottom - f.top) / 44)));
+  const xt = niceTicks(f.xMin, f.xMax, xCount);
+  const yt = niceTicks(f.yMin / yScale, f.yMax / yScale, yCount);
   ctx.strokeStyle = th.grid;
   ctx.beginPath();
   for (const t of xt) {
@@ -154,7 +218,7 @@ function drawAxes(
   for (const t of yt) ctx.fillText(tickLabel(t), f.left - 6, Y(f, t * yScale));
 
   ctx.fillStyle = th.fg;
-  ctx.font = `12px ${th.font}`;
+  ctx.font = `${th.textXs}px ${th.font}`;
   ctx.textAlign = 'center';
   ctx.textBaseline = 'bottom';
   ctx.fillText(xTitle, (f.left + f.right) / 2, f.bottom + 38);
@@ -186,7 +250,7 @@ function polyline(ctx: CanvasRenderingContext2D, f: Frame, xs: ArrayLike<number>
   ctx.stroke();
 }
 
-/** Upward arrow at the top edge of the frame, with a label. */
+/** Upward arrow at the top edge of the frame, with a label kept inside the frame. */
 function clipArrow(ctx: CanvasRenderingContext2D, f: Frame, x: number, color: string, label: string, th: Theme) {
   const y = f.top + 2;
   ctx.fillStyle = color;
@@ -196,11 +260,11 @@ function clipArrow(ctx: CanvasRenderingContext2D, f: Frame, x: number, color: st
   ctx.lineTo(x + 6, y + 3);
   ctx.closePath();
   ctx.fill();
-  ctx.font = `600 12px ${th.font}`;
-  ctx.textBaseline = 'middle';
-  const right = x + 10 + ctx.measureText(label).width < f.right;
-  ctx.textAlign = right ? 'left' : 'right';
-  ctx.fillText(label, right ? x + 10 : x - 10, y + 10);
+  const size = f.right - f.left < 320 ? th.textXs : th.textSm;
+  const wd = textWidth(ctx, th, label, size, 600);
+  let lx = x + 10 + wd < f.right - 4 ? x + 10 : x - 10 - wd;
+  lx = Math.max(f.left + 6, Math.min(lx, f.right - 4 - wd));
+  text(ctx, th, label, lx, y + 12, { color, size, weight: 600, baseline: 'middle' });
 }
 
 function legend(ctx: CanvasRenderingContext2D, f: Frame, th: Theme, items: { label: string; color: string; kind: 'fill' | 'line' | 'thin' | 'dash' | 'dot' }[]) {
@@ -386,31 +450,58 @@ export interface TotalsView {
   pRatio: Float64Array;
   yMax: number;
   lambdaMinNm: number;
+  /** Cutoff index where λ_min reaches 400 nm (start of the ultraviolet); omitted = not drawn. */
+  uvRc?: number;
 }
+
+/** Dash pattern that marks the classical series wherever it is drawn as a line (not colour alone). */
+export const CLASSICAL_DASH = [7, 4];
 
 export function drawTotals(canvas: HTMLCanvasElement, v: TotalsView, th: Theme) {
   const { ctx, w, h } = fitCanvas(canvas);
   clear(ctx, w, h, th);
-  const f = makeFrame(w, h, 0, v.rMax, 0, v.yMax);
+  const f = makeFrame(w, h, 0, v.rMax, 0, v.yMax, 22);
   drawAxes(ctx, f, th, 'cutoff index Rc  (λ_min = 2L / Rc)', 'U / aT⁴V');
+
+  // ultraviolet boundary: λ_min = 400 nm
+  if (v.uvRc !== undefined && v.uvRc > 0 && v.uvRc < v.rMax) {
+    const xu = Math.round(X(f, v.uvRc)) + 0.5;
+    ctx.save();
+    ctx.strokeStyle = th.muted;
+    ctx.lineWidth = 1;
+    ctx.setLineDash([2, 3]);
+    ctx.beginPath();
+    ctx.moveTo(xu, f.top);
+    ctx.lineTo(xu, f.bottom);
+    ctx.stroke();
+    ctx.restore();
+    if (xu + 90 < f.right) {
+      text(ctx, th, 'ultraviolet', xu + 6, f.bottom - 20, { color: th.muted });
+      text(ctx, th, 'λ < 400 nm', xu + 6, f.bottom - 6, { color: th.muted });
+    }
+  }
 
   const rs = new Float64Array(v.rc + 1).map((_, i) => i);
   withClip(ctx, f, () => {
     // reference line aT⁴V
     ctx.strokeStyle = th.fg;
     ctx.lineWidth = 1.25;
-    ctx.setLineDash([6, 4]);
+    ctx.setLineDash([2, 4]);
     ctx.beginPath();
     ctx.moveTo(f.left, Y(f, 1));
     ctx.lineTo(f.right, Y(f, 1));
     ctx.stroke();
     ctx.setLineDash([]);
 
-    ctx.lineWidth = 2.25;
+    ctx.lineCap = 'round';
+    ctx.lineWidth = 2.5;
     ctx.strokeStyle = th.classical;
+    ctx.setLineDash(CLASSICAL_DASH);
     polyline(ctx, f, rs, v.rjRatio, v.rc + 1);
+    ctx.setLineDash([]);
     ctx.strokeStyle = th.planck;
     polyline(ctx, f, rs, v.pRatio, v.rc + 1);
+    ctx.lineCap = 'butt';
 
     // current cutoff
     const xc = Math.round(X(f, v.rc)) + 0.5;
@@ -426,6 +517,10 @@ export function drawTotals(canvas: HTMLCanvasElement, v: TotalsView, th: Theme) 
       [v.rjRatio[v.rc], th.classical],
     ] as const) {
       if (ratio > v.yMax) continue;
+      ctx.fillStyle = th.halo;
+      ctx.beginPath();
+      ctx.arc(X(f, v.rc), Y(f, ratio), 6, 0, 2 * Math.PI);
+      ctx.fill();
       ctx.fillStyle = color;
       ctx.beginPath();
       ctx.arc(X(f, v.rc), Y(f, ratio), 4, 0, 2 * Math.PI);
@@ -433,18 +528,14 @@ export function drawTotals(canvas: HTMLCanvasElement, v: TotalsView, th: Theme) 
     }
   });
 
-  ctx.fillStyle = th.fg;
-  ctx.font = `11px ${th.font}`;
-  ctx.textAlign = 'right';
-  ctx.textBaseline = 'bottom';
-  ctx.fillText('aT⁴V', f.right - 4, Y(f, 1) - 3);
+  // reference label sits at the left end of its line, clear of the curves' end dots
+  text(ctx, th, 'aT⁴V', f.left + 6, Y(f, 1) - 5, { color: th.fg });
 
   const xc = X(f, v.rc);
-  ctx.fillStyle = th.muted;
   const lab = `λ_min = ${v.lambdaMinNm.toFixed(0)} nm`;
-  const fitsRight = xc + 6 + ctx.measureText(lab).width < f.right;
-  ctx.textAlign = fitsRight ? 'left' : 'right';
-  ctx.fillText(lab, fitsRight ? xc + 6 : xc - 6, f.bottom - 4);
+  const lw = textWidth(ctx, th, lab, th.textXs);
+  const fitsRight = xc + 6 + lw < f.right - 4;
+  text(ctx, th, lab, fitsRight ? xc + 6 : xc - 6, f.top + 30, { color: th.muted, align: fitsRight ? 'left' : 'right' });
 
   if (v.rjRatio[v.rc] > v.yMax) {
     let r = 0;
@@ -453,10 +544,4 @@ export function drawTotals(canvas: HTMLCanvasElement, v: TotalsView, th: Theme) 
     const shown = val >= 100 ? val.toFixed(0) : val.toFixed(1);
     clipArrow(ctx, f, X(f, r), th.classical, `classical U = ${shown} × aT⁴V and climbing`, th);
   }
-
-  legend(ctx, f, th, [
-    { label: 'classical (equipartition)', color: th.classical, kind: 'line' },
-    { label: 'Planck', color: th.planck, kind: 'line' },
-    { label: 'aT⁴V (Stefan–Boltzmann)', color: th.fg, kind: 'dash' },
-  ]);
 }

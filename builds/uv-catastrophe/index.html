@@ -136,7 +136,28 @@
         margin-bottom: var(--space-2);
       }
       .fig-title { font: 600 var(--text-md) / 1.3 var(--font-display); }
-      .fig-no { color: var(--muted); font-weight: 400; margin-right: var(--space-1); }
+      .fig-no { color: var(--muted); font-weight: 400; margin-right: var(--space-2); }
+      .key {
+        display: flex;
+        flex-wrap: wrap;
+        gap: var(--space-1) var(--space-4);
+        margin: 0;
+        padding: 0;
+        list-style: none;
+        font-size: var(--text-xs);
+        color: var(--muted);
+      }
+      .key li { display: inline-flex; align-items: center; gap: var(--space-2); }
+      /* swatches mirror the canvas strokes (plot.ts) */
+      .sw { display: inline-block; flex: none; width: 22px; }
+      .sw-line { height: 0; border-top: 2.5px solid; }
+      .sw-classical { border-color: var(--classical); border-top-style: dashed; }
+      .sw-planck { border-color: var(--planck); }
+      .sw-ref { border-color: var(--fg); border-top-width: 1.5px; border-top-style: dotted; }
+      .sw-bar { height: 10px; background: var(--planck); opacity: var(--bar-alpha); }
+      .sw-step { height: 10px; border: 1.5px solid var(--classical); border-bottom: 0; }
+      .sw-thin { height: 0; border-top: 1.5px solid var(--planck); }
+      .sw-dot { height: 0; border-top: 2px dotted var(--classical); }
       canvas {
         display: block;
         width: 100%;
@@ -284,6 +305,11 @@
           <figure class="fig">
             <figcaption>
               <span class="fig-title"><span class="fig-no">Fig. 1</span>Total energy in the box against the cutoff</span>
+              <ul class="key" aria-label="Key">
+                <li><span class="sw sw-line sw-classical" aria-hidden="true"></span>classical (Rayleigh–Jeans)</li>
+                <li><span class="sw sw-line sw-planck" aria-hidden="true"></span>Planck</li>
+                <li><span class="sw sw-line sw-ref" aria-hidden="true"></span>aT⁴V (Stefan–Boltzmann)</li>
+              </ul>
             </figcaption>
             <canvas id="totals" role="img" aria-label="Total energy, classical and Planck, against the cutoff index, in units of aT⁴V"></canvas>
           </figure>
